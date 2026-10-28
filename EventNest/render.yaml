@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: eventnest
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PGSSL
+        value: "true"
+      - key: JWT_SECRET
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: eventnest-db
+          property: connectionString
+databases:
+  - name: eventnest-db
+    plan: free
+    databaseName: eventnest

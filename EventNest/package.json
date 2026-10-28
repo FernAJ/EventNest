@@ -1,0 +1,14 @@
+{
+  "name": "eventnest",
+  "version": "1.0.0",
+  "description": "EventNest - Event Schedule Tracker for Ateneo de Zamboanga University",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "db:import": "node scripts/import-db.js"
+  },
+  "license": "ISC",
+  "engines": { "node": ">=18" },
+  "dependencies": { "express": "^5.2.1", "pg": "^8.13.0" }
+}
