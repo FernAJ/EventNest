@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EventNest - Interactive Dashboard & Archive</title>
+    <link rel="stylesheet" href="Style.css">
+    <!-- Google Font Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <!-- Secret Admin Passage Link -->
+    <a href="Admin.html" id="admin-passage" style="display:none" class="admin-passage-link">🔒 Admin Passage</a>
+
+    <!-- Top Navigation Bar -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="#" class="brand-logo">
+                <div class="brand-icon">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect><path d="M9 12h6"></path><path d="M9 16h6"></path></svg>
+                </div>
+                <span>EventNest</span>
+            </a>
+            <ul class="nav-links">
+                <li><a href="#" class="nav-link active">Dashboard</a></li>
+                <li><a href="#" class="nav-link" id="logout-link" onclick="logout(); return false;">Logout</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="main-wrapper">
+        
+        <!-- Header Section -->
+        <header class="dashboard-header">
+            <h1 class="dashboard-title" id="page-title">Dashboard</h1>
+            <p class="dashboard-subtitle" id="page-subtitle">Welcome back! Here's your event overview.</p>
+        </header>
+
+        <!-- Dynamic Stat Cards Row -->
+        <section class="stats-grid">
+            <!-- Stat 1: Current Events -->
+            <div class="stat-card">
+                <div class="stat-info">
+                    <div class="stat-label">Current Events</div>
+                    <div class="stat-value" id="stat-current-count">2</div>
+                    <div class="stat-subtext">In Progress</div>
+                </div>
+                <div class="stat-icon-wrapper stat-icon-purple">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"></polyline><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
+                </div>
+            </div>
+            <!-- Stat 2: Upcoming Events -->
+            <div class="stat-card">
+                <div class="stat-info">
+                    <div class="stat-label">Upcoming Events</div>
+                    <div class="stat-value" id="stat-upcoming-count">0</div>
+                    <div class="stat-subtext">Scheduled</div>
+                </div>
+                <div class="stat-icon-wrapper stat-icon-orange">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                </div>
+            </div>
+            <!-- Stat 3: Archived Events -->
+            <div class="stat-card">
+                <div class="stat-info">
+                    <div class="stat-label">Archived Events</div>
+                    <div class="stat-value" id="stat-archived-count">0</div>
+                    <div class="stat-subtext">Completed</div>
+                </div>
+                <div class="stat-icon-wrapper" style="background-color: #f0fdf4; color: #16a34a;">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                </div>
+            </div>
+        </section>
+
+        <!-- Dashboard Main Grid Layout -->
+        <div class="dashboard-grid">
+            
+            <!-- Left Main Section: Events View -->
+            <section class="content-card">
+                
+                <!-- View Header & Tab Selector -->
+                <div class="section-header">
+                    <h2 class="section-title" id="section-heading">Current Events</h2>
+                    <div class="tab-buttons">
+                        <button class="tab-btn active" id="tab-current-btn" onclick="switchTab('current')">Current Events</button>
+                        <button class="tab-btn" id="tab-upcoming-btn" onclick="switchTab('upcoming')">Upcoming Events</button>
+                        <button class="tab-btn" id="tab-archive-btn" onclick="switchTab('archive')">Event Archive</button>
+                        <button class="tab-btn" id="tab-mine-btn" onclick="switchTab('mine')">My Requests</button>
+                    </div>
+                </div>
+
+                <!-- Current Events List -->
+                <div class="events-list" id="current-events-list"></div>
+
+                <!-- Upcoming Events List -->
+                <div class="events-list hidden" id="upcoming-events-list"></div>
+
+                <!-- Archived Events List -->
+                <div class="events-list hidden" id="archive-events-list"></div>
+                <!-- My Requests -->
+                <div class="events-list hidden" id="mine-events-list"></div>
+                <div style="margin-top:1rem"><button class="tab-btn active" onclick="openRequestModal()">+ Request an Event</button></div>
+
+            </section>
+
+            <!-- Right Sidebar Panel -->
+            <aside class="sidebar">
+                
+                <!-- Alert Panel -->
+                <div class="alert-card">
+                    <div class="alert-header">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+                        <span>Alerts</span>
+                    </div>
+                    <div style="font-weight: 700; color: var(--primary-color); font-size: 0.95rem; margin-top: 0.5rem;">
+                        Upcoming Event Alert
+                    </div>
+                    <div class="alert-desc" id="alert-text-desc">
+                        Loading alerts...
+                    </div>
+                </div>
+
+                <!-- Interactive Calendar Widget -->
+                <div class="calendar-widget">
+                    <div class="calendar-nav">
+                        <button class="cal-btn" id="cal-prev-btn" title="Previous Month">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                        </button>
+
+                        <div class="cal-controls-selectors">
+                            <select id="cal-month-select" class="cal-select"></select>
+                            <select id="cal-year-select" class="cal-select"></select>
+                        </div>
+
+                        <button class="cal-btn" id="cal-next-btn" title="Next Month">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                        </button>
+                    </div>
+
+                    <div class="calendar-grid" id="calendar-days-grid"></div>
+
+                    <div class="cal-event-info" id="cal-selected-info">
+                        <span style="color: var(--text-muted);">Click any due-date to inspect scheduled events.</span>
+                    </div>
+                </div>
+
+            </aside>
+
+        </div>
+    </main>
+
+    <!-- Modal Component -->
+    <div class="modal-overlay" id="event-modal" onclick="closeModalOnOverlay(event)">
+        <div class="modal-box">
+            <div class="modal-header-area">
+                <div class="modal-title-group">
+                    <div class="modal-header-tag">Event Details</div>
+                    <h3 class="modal-title" id="modal-title">Event Title</h3>
+                </div>
+                <button class="modal-close-btn" onclick="closeModal()" title="Close">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
+            </div>
+            
+            <div class="modal-section-title">Event Description</div>
+            <p class="modal-description" id="modal-desc">Detailed event explanation text goes here.</p>
+            
+            <div class="modal-meta-grid">
+                <div>
+                    <div class="modal-section-title">Status & Venue</div>
+                    <div style="display: flex; gap: 0.5rem;" id="modal-badges">
+                        <span class="badge badge-low" id="modal-priority">Venue</span>
+                        <span class="badge badge-progress" id="modal-status">In Progress</span>
+                    </div>
+                </div>
+                <div style="text-align: right;">
+                    <div class="modal-section-title">Event Date</div>
+                    <div style="font-weight: 600; font-size: 0.9rem;" id="modal-date">2026-03-14</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Request Event Modal -->
+    <div class="modal-overlay" id="request-modal" onclick="if(event.target===this)closeRequestModal()">
+        <div class="modal-box">
+            <div class="modal-header-area">
+                <div class="modal-title-group">
+                    <div class="modal-header-tag">New Request</div>
+                    <h3 class="modal-title">Request an Event</h3>
+                </div>
+                <button class="modal-close-btn" onclick="closeRequestModal()" title="Close">&times;</button>
+            </div>
+            <div style="display:grid;gap:0.6rem;font-size:0.85rem">
+                <input id="req-title" placeholder="Event name" style="padding:0.6rem;border:1px solid #e5e7eb;border-radius:8px">
+                <select id="req-venue" style="padding:0.6rem;border:1px solid #e5e7eb;border-radius:8px"></select>
+                <label>Start <input type="datetime-local" id="req-start" style="padding:0.5rem;border:1px solid #e5e7eb;border-radius:8px;width:100%"></label>
+                <label>End <input type="datetime-local" id="req-end" style="padding:0.5rem;border:1px solid #e5e7eb;border-radius:8px;width:100%"></label>
+                <input id="req-org" placeholder="Hosting organization" style="padding:0.6rem;border:1px solid #e5e7eb;border-radius:8px">
+                <textarea id="req-desc" rows="2" placeholder="Description" style="padding:0.6rem;border:1px solid #e5e7eb;border-radius:8px"></textarea>
+                <button class="tab-btn active" onclick="submitRequest()">Submit Request</button>
+                <div id="req-msg" style="color:#ef4444;font-size:0.8rem"></div>
+            </div>
+        </div>
+    </div>
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-container">
+            <div class="footer-brand">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg>
+                <span>© 2026 EventNest. All rights reserved.</span>
+            </div>
+            <ul class="footer-links">
+                <li><a href="#" class="footer-link">Privacy Policy</a></li>
+                <li><a href="#" class="footer-link">Terms of Service</a></li>
+                <li><a href="#" class="footer-link">Support</a></li>
+            </ul>
+        </div>
+    </footer>
+
+    <script>
+        // --- DATA (loaded from the EventNest API) ---
+        let eventsData = [];
+        let myRequests = [];
+        let venuesList = [];
+        const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+        async function api(path, method = 'GET', body) {
+            const res = await fetch('/api' + path, { method, credentials: 'same-origin',
+                headers: body ? { 'Content-Type': 'application/json' } : undefined,
+                body: body ? JSON.stringify(body) : undefined });
+            let data = {}; try { data = await res.json(); } catch (e) {}
+            if (!res.ok) { const err = new Error(data.error || 'Request failed'); err.status = res.status; throw err; }
+            return data;
+        }
+        const toCard = (e, status) => ({ id: e.event_id, title: e.title, date: e.start_datetime.slice(0, 10),
+            priority: e.venue_name, status, desc: (e.description || 'No description provided.') +
+            '  [' + e.start_datetime.replace('T', ' ').slice(0, 16) + ' to ' + e.end_datetime.replace('T', ' ').slice(11, 16) + ']' });
+        async function logout() { try { await api('/auth/logout', 'POST'); } catch (e) {} location.href = 'Admin.html'; }
+        let activeTab = 'current';
+
+        // --- DOM ELEMENTS ---
+        const currentList = document.getElementById('current-events-list');
+        const upcomingList = document.getElementById('upcoming-events-list');
+        const archiveList = document.getElementById('archive-events-list');
+        const sectionHeading = document.getElementById('section-heading');
+        const modal = document.getElementById('event-modal');
+
+        const monthSelect = document.getElementById('cal-month-select');
+        const yearSelect = document.getElementById('cal-year-select');
+        const calendarGrid = document.getElementById('calendar-days-grid');
+        const calInfoBox = document.getElementById('cal-selected-info');
+
+        let currentCalDate = new Date();
+
+        const monthNames = [
+            "January", "February", "March", "April", "May", "June",
+            "July", "August", "September", "October", "November", "December"
+        ];
+
+        // --- DYNAMIC METRIC & LIST SYNC ---
+        function updateDashboard() {
+            const currentEvents = eventsData.filter(e => e.status === 'In Progress');
+            const upcomingEvents = eventsData.filter(e => e.status === 'Upcoming');
+            const archiveEvents = eventsData.filter(e => e.status === 'Completed');
+            document.getElementById('stat-current-count').textContent = currentEvents.length;
+            document.getElementById('stat-upcoming-count').textContent = upcomingEvents.length;
+            document.getElementById('stat-archived-count').textContent = archiveEvents.length;
+            renderList(currentList, currentEvents, false);
+            renderList(upcomingList, upcomingEvents, false);
+            renderList(archiveList, archiveEvents, true);
+            renderList(document.getElementById('mine-events-list'), myRequests, false);
+            renderCalendar();
+        }
+        async function loadData() {
+            const [cur, up, arch, mine, notes] = await Promise.all([
+                api('/events?view=current'), api('/events?view=upcoming'), api('/events?view=archive'),
+                api('/events/mine'), api('/notifications')]);
+            eventsData = [...cur.map(e => toCard(e, 'In Progress')), ...up.map(e => toCard(e, 'Upcoming')),
+                          ...arch.map(e => toCard(e, 'Completed'))];
+            myRequests = mine.map(e => ({ ...toCard(e, e.status), desc: toCard(e, e.status).desc + (e.rejection_reason ? '  Rejected: ' + e.rejection_reason : '') }));
+            const items = (notes.items || []).slice(0, 3);
+            document.getElementById('alert-text-desc').innerHTML = items.length
+                ? items.map(n => '&bull; ' + esc(n.message)).join('<br>') : 'No alerts.';
+            if (notes.unread) api('/notifications/read-all', 'PATCH').catch(() => {});
+            updateDashboard();
+        }
+        async function openRequestModal() {
+            if (!venuesList.length) venuesList = await api('/venues');
+            document.getElementById('req-venue').innerHTML = venuesList.map(v => `<option value="${v.venue_id}">${esc(v.name)}</option>`).join('');
+            document.getElementById('req-msg').textContent = '';
+            document.getElementById('request-modal').classList.add('active');
+        }
+        function closeRequestModal() { document.getElementById('request-modal').classList.remove('active'); }
+        async function submitRequest() {
+            try {
+                await api('/events', 'POST', {
+                    title: document.getElementById('req-title').value,
+                    venue_id: Number(document.getElementById('req-venue').value),
+                    start_datetime: document.getElementById('req-start').value,
+                    end_datetime: document.getElementById('req-end').value,
+                    hosting_organization: document.getElementById('req-org').value,
+                    description: document.getElementById('req-desc').value });
+                closeRequestModal();
+                await loadData();
+                switchTab('mine');
+            } catch (e) { document.getElementById('req-msg').textContent = e.message; }
+        }
+        function renderList(container, list, isArchive) {
+            container.innerHTML = '';
+            if (list.length === 0) {
+                container.innerHTML = '<div class="empty-state">No events available in this section.</div>';
+                return;
+            }
+
+            list.forEach(evt => {
+                const item = document.createElement('div');
+                item.className = 'event-item';
+                
+                // Clicking opens modal without removing item
+                item.onclick = () => {
+                    openModal(evt);
+                };
+
+                let badgeClass = 'badge-upcoming';
+                if (evt.status === 'In Progress') badgeClass = 'badge-progress';
+                if (evt.status === 'Completed' || evt.status === 'Approved') badgeClass = 'badge-completed';
+                if (evt.status === 'Rejected') badgeClass = 'badge-high';
+
+                const checkboxMarkup = isArchive ? `
+                    <div class="archive-checkbox-icon" title="Completed Event">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                    </div>
+                ` : '';
+
+                item.innerHTML = `
+                    <div class="event-details-left">
+                        ${checkboxMarkup}
+                        <div>
+                            <div class="event-title">${esc(evt.title)}</div>
+                            <div class="event-date">Date: ${evt.date}</div>
+                        </div>
+                    </div>
+                    <div class="event-badges">
+                        <span class="badge badge-low">${evt.priority}</span>
+                        <span class="badge ${badgeClass}">${evt.status}</span>
+                    </div>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        // --- TAB SWITCHING ---
+        function switchTab(tab) {
+            activeTab = tab;
+            const tabs = { current: 'Current Events', upcoming: 'Upcoming Events', archive: 'Event Archive', mine: 'My Requests' };
+            Object.keys(tabs).forEach(t => {
+                document.getElementById('tab-' + t + '-btn').classList.toggle('active', t === tab);
+                document.getElementById(t + '-events-list').classList.toggle('hidden', t !== tab);
+            });
+            sectionHeading.textContent = tabs[tab];
+        }
+        // --- INTERACTIVE CALENDAR ENGINE ---
+        function initCalendarSelectors() {
+            monthSelect.innerHTML = '';
+            monthNames.forEach((m, idx) => {
+                const opt = document.createElement('option');
+                opt.value = idx;
+                opt.textContent = m;
+                monthSelect.appendChild(opt);
+            });
+
+            yearSelect.innerHTML = '';
+            for (let y = 2022; y <= 2030; y++) {
+                const opt = document.createElement('option');
+                opt.value = y;
+                opt.textContent = y;
+                yearSelect.appendChild(opt);
+            }
+
+            monthSelect.addEventListener('change', () => {
+                currentCalDate.setMonth(parseInt(monthSelect.value));
+                renderCalendar();
+            });
+
+            yearSelect.addEventListener('change', () => {
+                currentCalDate.setFullYear(parseInt(yearSelect.value));
+                renderCalendar();
+            });
+
+            document.getElementById('cal-prev-btn').addEventListener('click', () => {
+                currentCalDate.setMonth(currentCalDate.getMonth() - 1);
+                renderCalendar();
+            });
+
+            document.getElementById('cal-next-btn').addEventListener('click', () => {
+                currentCalDate.setMonth(currentCalDate.getMonth() + 1);
+                renderCalendar();
+            });
+        }
+
+        function renderCalendar() {
+            const year = currentCalDate.getFullYear();
+            const month = currentCalDate.getMonth();
+
+            monthSelect.value = month;
+            yearSelect.value = year;
+
+            calendarGrid.innerHTML = '';
+
+            const dayHeaders = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+            dayHeaders.forEach(dh => {
+                const el = document.createElement('div');
+                el.className = 'cal-day-header';
+                el.textContent = dh;
+                calendarGrid.appendChild(el);
+            });
+
+            const firstDayIndex = new Date(year, month, 1).getDay();
+            const totalDays = new Date(year, month + 1, 0).getDate();
+            const prevMonthTotalDays = new Date(year, month, 0).getDate();
+
+            // Previous month padding
+            for (let x = firstDayIndex; x > 0; x--) {
+                const el = document.createElement('div');
+                el.className = 'cal-date other-month';
+                el.textContent = prevMonthTotalDays - x + 1;
+                calendarGrid.appendChild(el);
+            }
+
+            const today = new Date();
+
+            for (let d = 1; d <= totalDays; d++) {
+                const el = document.createElement('div');
+                el.className = 'cal-date';
+                el.textContent = d;
+
+                const formattedMonth = String(month + 1).padStart(2, '0');
+                const formattedDay = String(d).padStart(2, '0');
+                const dateStr = `${year}-${formattedMonth}-${formattedDay}`;
+
+                if (today.getFullYear() === year && today.getMonth() === month && today.getDate() === d) {
+                    el.classList.add('today');
+                }
+
+                // Strictly highlight ONLY dates that match actual event dates
+                const matchedEvents = eventsData.filter(e => e.date === dateStr);
+                if (matchedEvents.length > 0) {
+                    el.classList.add('has-event');
+                }
+
+                el.onclick = () => {
+                    document.querySelectorAll('.cal-date').forEach(cd => cd.classList.remove('selected'));
+                    el.classList.add('selected');
+
+                    if (matchedEvents.length > 0) {
+                        calInfoBox.innerHTML = `
+                            <div style="font-weight:700; color:var(--primary-color); margin-bottom: 4px;">${dateStr} (${matchedEvents.length} Event${matchedEvents.length > 1 ? 's' : ''}):</div>
+                            ${matchedEvents.map(m => `<div style="color:var(--text-primary); margin-top:2px;">• <strong>${esc(m.title)}</strong> (${m.status})</div>`).join('')}
+                        `;
+                    } else {
+                        calInfoBox.innerHTML = `<span style="color:var(--text-secondary);">No events scheduled for <strong>${dateStr}</strong>.</span>`;
+                    }
+                };
+
+                calendarGrid.appendChild(el);
+            }
+
+            // Next month padding
+            const totalCells = firstDayIndex + totalDays;
+            const remainingCells = (7 - (totalCells % 7)) % 7;
+            for (let y = 1; y <= remainingCells; y++) {
+                const el = document.createElement('div');
+                el.className = 'cal-date other-month';
+                el.textContent = y;
+                calendarGrid.appendChild(el);
+            }
+        }
+
+        // --- MODAL LOGIC ---
+        function openModal(evt) {
+            document.getElementById('modal-title').textContent = evt.title;
+            document.getElementById('modal-date').textContent = evt.date;
+            document.getElementById('modal-desc').textContent = evt.desc;
+
+            const priorityBadge = document.getElementById('modal-priority');
+            const statusBadge = document.getElementById('modal-status');
+
+            priorityBadge.className = `badge badge-low`;
+            priorityBadge.textContent = evt.priority;
+
+            let badgeClass = 'badge-upcoming';
+            if (evt.status === 'In Progress') badgeClass = 'badge-progress';
+            if (evt.status === 'Completed' || evt.status === 'Approved') badgeClass = 'badge-completed';
+                if (evt.status === 'Rejected') badgeClass = 'badge-high';
+
+            statusBadge.className = `badge ${badgeClass}`;
+            statusBadge.textContent = evt.status;
+
+            modal.classList.add('active');
+        }
+
+        function closeModal() {
+            modal.classList.remove('active');
+        }
+
+        function closeModalOnOverlay(event) {
+            if (event.target === modal) {
+                closeModal();
+            }
+        }
+
+        // Initialize App
+        window.onload = async () => {
+            initCalendarSelectors();
+            try {
+                const me = await api('/auth/me');
+                if (me.user.role === 'Admin') document.getElementById('admin-passage').style.display = '';
+                await loadData();
+            } catch (err) {
+                if (err.status === 401) location.href = 'Admin.html'; else updateDashboard();
+            }
+        };
+    </script>
+</body>
+</html>
