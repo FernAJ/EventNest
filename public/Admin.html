@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EventNest</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #3b82f6;
+      --primary-hover: #2563eb;
+      --bg-color: #f7f9fc;
+      --card-bg: #ffffff;
+      --text-main: #1f2937;
+      --text-muted: #6b7280;
+      --border-color: #e5e7eb;
+      --danger: #ef4444;
+      --danger-hover: #dc2626;
+      --success: #10b981;
+      --success-hover: #059669;
+      --tag-high-bg: #fee2e2;
+      --tag-high-text: #ef4444;
+      --tag-progress-bg: #e0e7ff;
+      --tag-progress-text: #6366f1;
+      --tag-done-bg: #d1fae5;
+      --tag-done-text: #10b981;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .fade-transition {
+      transition: opacity 0.25s ease-in-out, transform 0.25s ease-in-out;
+    }
+
+    .page-hidden {
+      display: none !important;
+      opacity: 0;
+      transform: translateY(8px);
+    }
+
+    .page-visible {
+      display: block;
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* Dashboard & Component Styles */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .metric-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 1.25rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .content-grid {
+      display: grid;
+      grid-template-columns: 1fr 320px;
+      gap: 1.5rem;
+    }
+
+    @media (max-width: 900px) {
+      .content-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .section-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 1.5rem;
+    }
+
+    .event-list {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .event-item {
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #fff;
+      cursor: pointer;
+      transition: border-color 0.2s, background-color 0.2s;
+    }
+
+    .event-item:hover {
+      border-color: #cbd5e1;
+    }
+
+    .event-item.selected {
+      border-color: var(--primary);
+      background-color: #f8fafc;
+    }
+
+    .checkbox {
+      width: 20px;
+      height: 20px;
+      border: 2px solid #cbd5e1;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .event-item.selected .checkbox {
+      background-color: var(--primary);
+      border-color: var(--primary);
+      color: #fff;
+    }
+
+    .event-item.selected .checkbox::after {
+      content: '✓';
+      font-size: 12px;
+    }
+
+    .tag {
+      padding: 0.25rem 0.6rem;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    .tag.high { background: var(--tag-high-bg); color: var(--tag-high-text); }
+    .tag.in-progress { background: var(--tag-progress-bg); color: var(--tag-progress-text); }
+    .tag.done { background: var(--tag-done-bg); color: var(--tag-done-text); }
+
+    /* Modals */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+      z-index: 1000;
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal {
+      background: #fff;
+      border-radius: 12px;
+      padding: 1.5rem;
+      width: 100%;
+      max-width: 440px;
+      position: relative;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+    }
+  </style>
+</head>
+<body class="antialiased selection:bg-blue-500 selection:text-white">
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <!-- Top Navigation Header -->
+  <header class="bg-white border-t-4 border-t-[#1a73e8] border-b border-gray-200 px-6 sm:px-12 py-3.5 flex items-center justify-between shadow-xs sticky top-0 z-40">
+    <div class="flex items-center gap-2.5 cursor-pointer" onclick="navigateHome()">
+      <div class="bg-[#6366f1] text-white w-8 h-8 rounded-lg flex items-center justify-center text-sm shadow-sm">
+        <i class="fa-regular fa-clipboard"></i>
+      </div>
+      <span class="text-xl font-bold text-[#3b82f6] tracking-tight">EventNest</span>
+    </div>
+
+    <!-- Dynamic Navigation links based on auth status -->
+    <nav id="app-nav" class="hidden md:flex items-center gap-6 text-sm font-medium text-gray-600">
+      <a href="#" onclick="showPage('dashboard')" class="hover:text-blue-600 transition-colors">Dashboard</a>
+      <a href="#" onclick="location.href='User.html'; return false;" class="hover:text-gray-900 transition-colors">Archive</a>
+      <button onclick="logout()" class="text-red-500 hover:text-red-600 font-semibold text-xs border border-red-200 px-3 py-1.5 rounded-lg hover:bg-red-50 transition-all">
+        Logout
+      </button>
+    </nav>
+  </header>
+
+  <!-- Main Container -->
+  <main class="flex-1 w-full max-w-7xl mx-auto p-4 sm:p-6 flex flex-col justify-center">
+
+    <!-- ==================== VIEW 1: LOGIN PAGE ==================== -->
+    <div id="login-page" class="fade-transition page-visible my-auto flex justify-center">
+      <div class="bg-white w-full max-w-[410px] rounded-2xl p-7 sm:p-8 shadow-xl shadow-slate-200/60 border border-gray-100 relative">
+        <button 
+          onclick="fillShortcut('login')"
+          class="absolute top-4 right-5 text-[11px] font-medium text-[#3b82f6] hover:underline cursor-pointer bg-blue-50 px-2 py-0.5 rounded-full"
+        >
+          Normal User Shortcut
+        </button>
+
+        <h2 class="text-xl font-bold text-gray-900 mb-6 text-left">Login to your account</h2>
+
+        <form onsubmit="handleLoginSubmit(event)" class="space-y-4">
+          <div class="space-y-1.5">
+            <label for="login-email" class="block text-xs font-semibold text-gray-600 uppercase tracking-wide">Email</label>
+            <input type="email" id="login-email" placeholder="Enter your email" class="w-full px-3.5 py-2.5 text-sm text-gray-800 bg-white border border-gray-200 rounded-lg outline-none focus:border-blue-500 focus:ring-3 focus:ring-blue-100 transition-all" required />
+          </div>
+
+          <div class="space-y-1.5">
+            <div class="flex items-center justify-between">
+              <label for="login-password" class="block text-xs font-semibold text-gray-600 uppercase tracking-wide">Password</label>
+              <a href="#" onclick="showToast('Password reset link sent to email!'); return false;" class="text-xs text-blue-600 hover:text-blue-700 hover:underline font-medium">Forgot ?</a>
+            </div>
+            <div class="relative flex items-center">
+              <input type="password" id="login-password" placeholder="Enter your password" class="w-full pl-3.5 pr-10 py-2.5 text-sm text-gray-800 bg-white border border-gray-200 rounded-lg outline-none focus:border-blue-500 focus:ring-3 focus:ring-blue-100 transition-all" required />
+              <button type="button" onclick="togglePasswordVisibility('login-password', 'login-eye')" class="absolute right-3 text-gray-400 hover:text-gray-600 focus:outline-none">
+                <i id="login-eye" class="fa-regular fa-eye-slash text-sm"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="pt-2">
+            <button type="submit" class="w-full py-2.5 px-4 bg-[#1d6bf3] hover:bg-[#1557c0] text-white font-medium text-sm rounded-lg shadow-sm transition-all duration-200">
+              Login now
+            </button>
+          </div>
+        </form>
+
+        <div class="mt-6 text-center text-xs text-gray-500">
+          Don't Have An Account? 
+          <button type="button" onclick="showPage('signup')" class="text-[#3b82f6] hover:underline font-semibold ml-1 cursor-pointer">Sign Up</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== VIEW 2: CREATE ACCOUNT PAGE ==================== -->
+    <div id="signup-page" class="fade-transition page-hidden my-auto flex justify-center">
+      <div class="bg-white w-full max-w-[410px] rounded-2xl p-7 sm:p-8 shadow-xl shadow-slate-200/60 border border-gray-100 relative">
+        <h2 class="text-xl font-bold text-gray-900 mb-6 text-left">Create an account</h2>
+
+        <form onsubmit="handleSignupSubmit(event)" class="space-y-4">
+          <div class="space-y-1.5">
+            <label for="signup-email" class="block text-xs font-semibold text-gray-600 uppercase tracking-wide">Email</label>
+            <input type="email" id="signup-email" placeholder="Enter your email" class="w-full px-3.5 py-2.5 text-sm text-gray-800 bg-white border border-gray-200 rounded-lg outline-none focus:border-blue-500 focus:ring-3 focus:ring-blue-100 transition-all" required />
+          </div>
+
+          <div class="space-y-1.5">
+            <div class="flex items-center justify-between">
+              <label for="signup-password" class="block text-xs font-semibold text-gray-600 uppercase tracking-wide">Password</label>
+            </div>
+            <div class="relative flex items-center">
+              <input type="password" id="signup-password" placeholder="Enter your password" class="w-full pl-3.5 pr-10 py-2.5 text-sm text-gray-800 bg-white border border-gray-200 rounded-lg outline-none focus:border-blue-500 focus:ring-3 focus:ring-blue-100 transition-all" required />
+              <button type="button" onclick="togglePasswordVisibility('signup-password', 'signup-eye')" class="absolute right-3 text-gray-400 hover:text-gray-600 focus:outline-none">
+                <i id="signup-eye" class="fa-regular fa-eye-slash text-sm"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="pt-2 space-y-3">
+            <button type="submit" class="w-full py-2.5 px-4 bg-[#2563eb] hover:bg-[#1d4ed8] text-white font-medium text-sm rounded-lg shadow-sm transition-all duration-200">
+              Create account
+            </button>
+            <button type="button" onclick="showToast('Google sign-in is not available. Use email and password.')" class="w-full py-2.5 px-4 bg-[#dbeafe] hover:bg-[#bfdbfe] text-[#1d4ed8] font-medium text-sm rounded-lg transition-all duration-200 flex items-center justify-center gap-2.5">
+              <svg class="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24">
+                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+              </svg>
+              <span>Continue with Google</span>
+            </button>
+          </div>
+        </form>
+
+        <div class="mt-6 text-center text-xs text-gray-500">
+          Already Have An Account? 
+          <button type="button" onclick="showPage('login')" class="text-[#3b82f6] hover:underline font-semibold ml-1 cursor-pointer">Log In</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== VIEW 3: DASHBOARD PAGE ==================== -->
+    <div id="dashboard-page" class="fade-transition page-hidden">
+      <div class="mb-6">
+        <h1 class="text-2xl font-bold text-gray-900">Dashboard</h1>
+        <p class="text-sm text-gray-500">Welcome back, <span id="user-display-email" class="font-semibold text-gray-700">User</span>! Here's your overview for today.</p>
+      </div>
+
+      <!-- Top Metrics Grid -->
+      <div class="metrics-grid">
+        <div class="metric-card">
+          <div>
+            <span class="text-xs text-gray-500 block">Current Events</span>
+            <h2 id="current-count" class="text-2xl font-bold my-1">2</h2>
+            <span class="text-xs text-gray-500">In progress</span>
+          </div>
+          <div class="w-10 h-10 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold">📋</div>
+        </div>
+        <div class="metric-card">
+          <div>
+            <span class="text-xs text-gray-500 block">Upcoming Events</span>
+            <h2 id="upcoming-count" class="text-2xl font-bold my-1">1</h2>
+            <span class="text-xs text-gray-500">Upcoming</span>
+          </div>
+          <div class="w-10 h-10 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center font-bold">🕒</div>
+        </div>
+        <div class="metric-card">
+          <div>
+            <span class="text-xs text-gray-500 block">Pending Requests</span>
+            <h2 id="pending-count" class="text-2xl font-bold my-1">0</h2>
+            <span class="text-xs text-gray-500">Waiting for review</span>
+          </div>
+          <div class="w-10 h-10 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center font-bold">📨</div>
+        </div>
+      </div>
+
+      <!-- Content Area -->
+      <div class="content-grid">
+        <!-- Event Management Column -->
+        <div class="section-card">
+          <div class="flex justify-between items-center mb-6">
+            <h3 class="text-base font-bold text-gray-800">Scheduled Events</h3>
+            <button class="bg-blue-600 hover:bg-blue-700 text-white px-3.5 py-1.5 rounded-lg text-sm font-semibold shadow-xs" onclick="openModal('add-modal')">+ Add Event</button>
+          </div>
+
+          <!-- Dynamic Event List -->
+          <div class="event-list" id="event-list"></div>
+
+          <!-- Actions -->
+          <div class="flex justify-center gap-3 pt-2">
+            <button class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-all" onclick="confirmFinish()">Finish Event</button>
+            <button class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-all" onclick="confirmDelete()">Delete Event</button>
+          </div>
+          <div class="border-t border-gray-100 mt-5 pt-4">
+            <h3 class="text-base font-bold text-gray-800 mb-3">Pending Requests</h3>
+            <div class="event-list" id="pending-list"></div>
+          </div>
+        </div>
+
+        <!-- Sidebar Section -->
+        <div>
+          <a href="User.html" onclick="location.href='User.html'; return false;" class="block text-right text-xs text-gray-500 hover:underline mb-2">View Event Archive</a>
+          <div class="section-card">
+            <h3 class="text-sm font-bold text-gray-800 mb-3">Alerts</h3>
+            
+            <div id="alerts-list" class="space-y-2 mb-4"></div>
+
+            <!-- Calendar Widget -->
+            <div class="border border-gray-200 rounded-lg p-3 text-center">
+              <div class="flex justify-between text-xs font-semibold mb-2">
+                <span class="cursor-pointer text-gray-400">«</span>
+                <span>November 2026</span>
+                <span class="cursor-pointer text-gray-400">»</span>
+              </div>
+              <div class="grid grid-cols-7 gap-1 text-[11px] text-gray-600">
+                <span class="font-bold text-gray-400">Su</span><span class="font-bold text-gray-400">Mo</span><span class="font-bold text-gray-400">Tu</span><span class="font-bold text-gray-400">We</span><span class="font-bold text-gray-400">Th</span><span class="font-bold text-gray-400">Fr</span><span class="font-bold text-gray-400">Sa</span>
+                <span class="text-gray-300">30</span><span class="text-gray-300">31</span>
+                <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span>
+                <span>6</span><span>7</span><span>8</span><span>9</span><span>10</span><span>11</span><span>12</span>
+                <span>13</span><span>14</span><span>15</span>
+                <span class="bg-indigo-100 text-indigo-700 rounded">16</span><span class="bg-indigo-100 text-indigo-700 rounded">17</span><span class="bg-indigo-100 text-indigo-700 rounded">18</span><span class="bg-indigo-100 text-indigo-700 rounded">19</span>
+                <span class="bg-indigo-100 text-indigo-700 rounded">20</span><span class="bg-indigo-100 text-indigo-700 rounded">21</span><span class="bg-indigo-100 text-indigo-700 rounded">22</span><span class="bg-indigo-100 text-indigo-700 rounded">23</span>
+                <span class="bg-blue-600 text-white rounded font-bold">24</span><span>25</span><span>26</span>
+                <span>27</span><span>28</span><span>29</span><span>30</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="bg-white border-t border-gray-200 px-6 sm:px-12 py-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-gray-500 mt-auto">
+    <div class="flex items-center gap-2">
+      <i class="fa-regular fa-clipboard text-gray-400"></i>
+      <span></span>
+    </div>
+    <div class="flex items-center gap-6">
+      <a href="#" onclick="showToast('Privacy Policy'); return false;" class="hover:text-gray-800">Privacy Policy</a>
+      <a href="#" onclick="showToast('Terms of Service'); return false;" class="hover:text-gray-800">Terms of Service</a>
+      <a href="#" onclick="showToast('Support Center'); return false;" class="hover:text-gray-800">Support</a>
+    </div>
+  </footer>
+
+  <!-- ==================== MODALS ==================== -->
+  <!-- Add Task Modal -->
+  <div class="modal-overlay" id="add-modal">
+    <div class="modal">
+      <button class="absolute top-4 right-4 text-red-500 text-lg font-bold" onclick="closeModal('add-modal')">×</button>
+      <h3 class="text-base font-bold text-gray-900 mb-4">Add New Event</h3>
+      <div class="space-y-3">
+        <div>
+          <label class="block text-xs font-semibold text-gray-600 mb-1">Event Name</label>
+          <input type="text" id="add-name" class="w-full p-2.5 text-xs border border-gray-200 rounded-lg bg-gray-50" placeholder="Your Event Name">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-gray-600 mb-1">Venue</label>
+          <select id="add-venue" class="w-full p-2.5 text-xs border border-gray-200 rounded-lg bg-gray-50"></select>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 mb-1">Start</label>
+            <input type="datetime-local" id="add-start" class="w-full p-2.5 text-xs border border-gray-200 rounded-lg bg-gray-50">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 mb-1">End</label>
+            <input type="datetime-local" id="add-end" class="w-full p-2.5 text-xs border border-gray-200 rounded-lg bg-gray-50">
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-gray-600 mb-1">Description</label>
+          <textarea id="add-desc" rows="2" class="w-full p-2.5 text-xs border border-gray-200 rounded-lg bg-gray-50"></textarea>
+        </div>
+      </div>
+      <div class="mt-5 flex justify-end gap-2">
+        <button class="bg-gray-200 hover:bg-gray-300 text-gray-800 text-xs px-4 py-2 rounded-lg font-semibold" onclick="closeModal('add-modal')">Cancel</button>
+        <button class="bg-blue-600 hover:bg-blue-700 text-white text-xs px-4 py-2 rounded-lg font-semibold" onclick="addEvent()">Add Event</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Task Modal -->
+  <div class="modal-overlay" id="edit-modal">
+    <div class="modal">
+      <button class="absolute top-4 right-4 text-red-500 text-lg font-bold" onclick="closeModal('edit-modal')">×</button>
+      <h3 class="text-base font-bold text-gray-900 mb-4">Edit Event</h3>
+      <div class="space-y-3">
+        <div>
+          <label class="block text-xs font-semibold text-gray-600 mb-1">Event Name</label>
+          <input type="text" id="edit-name" class="w-full p-2.5 text-xs border border-gray-200 rounded-lg bg-gray-50" placeholder="Your Event Name">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-gray-600 mb-1">Venue</label>
+          <select id="edit-venue" class="w-full p-2.5 text-xs border border-gray-200 rounded-lg bg-gray-50"></select>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 mb-1">Start</label>
+            <input type="datetime-local" id="edit-start" class="w-full p-2.5 text-xs border border-gray-200 rounded-lg bg-gray-50">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 mb-1">End</label>
+            <input type="datetime-local" id="edit-end" class="w-full p-2.5 text-xs border border-gray-200 rounded-lg bg-gray-50">
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-gray-600 mb-1">Description</label>
+          <textarea id="edit-desc" rows="2" class="w-full p-2.5 text-xs border border-gray-200 rounded-lg bg-gray-50"></textarea>
+        </div>
+      </div>
+      <div class="mt-5 flex justify-end gap-2">
+        <button class="bg-gray-200 hover:bg-gray-300 text-gray-800 text-xs px-4 py-2 rounded-lg font-semibold" onclick="closeModal('edit-modal')">Cancel</button>
+        <button class="bg-blue-600 hover:bg-blue-700 text-white text-xs px-4 py-2 rounded-lg font-semibold" onclick="saveEdit()">Save Changes</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Confirm Delete Modal -->
+  <div class="modal-overlay" id="delete-modal">
+    <div class="modal text-center">
+      <div class="w-12 h-12 rounded-full bg-red-100 text-red-500 text-2xl flex items-center justify-center mx-auto mb-3">⚠️</div>
+      <h3 class="text-base font-bold text-gray-900">Are you sure you want to delete this event?</h3>
+      <p class="text-xs text-gray-500 my-2">This action cannot be undone.</p>
+      <div class="mt-5 flex justify-center gap-3">
+        <button class="bg-red-600 hover:bg-red-700 text-white text-xs px-5 py-2 rounded-lg font-semibold" onclick="executeDelete()">YES</button>
+        <button class="bg-gray-200 hover:bg-gray-300 text-gray-800 text-xs px-5 py-2 rounded-lg font-semibold" onclick="closeModal('delete-modal')">NO</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Confirm Finish Modal -->
+  <div class="modal-overlay" id="finish-modal">
+    <div class="modal text-center">
+      <div class="w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 text-2xl flex items-center justify-center mx-auto mb-3">✓</div>
+      <h3 class="text-base font-bold text-gray-900">Are you sure you want to finish this event?</h3>
+      <p class="text-xs text-gray-500 my-2">This will mark the selected task as completed.</p>
+      <div class="mt-5 flex justify-center gap-3">
+        <button class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-5 py-2 rounded-lg font-semibold" onclick="executeFinish()">YES</button>
+        <button class="bg-gray-200 hover:bg-gray-300 text-gray-800 text-xs px-5 py-2 rounded-lg font-semibold" onclick="closeModal('finish-modal')">NO</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Integrated JavaScript Logic (connected to the EventNest API) -->
+  <script>
+    let currentUser = null;
+    let selectedEventId = null;
+    let editingId = null;
+    let events = [];      // approved events (current + upcoming)
+    let pending = [];
+    let venues = [];
+
+    const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    const fmt = (s) => String(s || '').replace('T', ' ').slice(0, 16);
+
+    async function api(path, method = 'GET', body) {
+      const res = await fetch('/api' + path, {
+        method, credentials: 'same-origin',
+        headers: body ? { 'Content-Type': 'application/json' } : undefined,
+        body: body ? JSON.stringify(body) : undefined
+      });
+      let data = {};
+      try { data = await res.json(); } catch (e) {}
+      if (!res.ok) { const err = new Error(data.error || 'Request failed'); err.status = res.status; throw err; }
+      return data;
+    }
+
+    function showPage(pageId) {
+      ['login', 'signup', 'dashboard'].forEach(id => {
+        const el = document.getElementById(`${id}-page`);
+        el.classList.toggle('page-hidden', id !== pageId);
+        el.classList.toggle('page-visible', id === pageId);
+      });
+      const nav = document.getElementById('app-nav');
+      if (pageId === 'dashboard') {
+        nav.classList.remove('hidden');
+        document.title = "EventNest - Admin Dashboard";
+        loadDashboard();
+      } else {
+        nav.classList.add('hidden');
+        document.title = pageId === 'login' ? "EventNest - Login" : "EventNest - Create Account";
+      }
+    }
+    function navigateHome() { showPage(currentUser ? 'dashboard' : 'login'); }
+
+    // After login: Admins stay here, normal users go to the User page.
+    function enter(user) {
+      currentUser = user;
+      if (user.role !== 'Admin') { location.href = 'User.html'; return; }
+      document.getElementById('user-display-email').innerText = user.email;
+      showPage('dashboard');
+    }
+    async function handleLoginSubmit(event) {
+      event.preventDefault();
+      try {
+        const r = await api('/auth/login', 'POST', {
+          email: document.getElementById('login-email').value,
+          password: document.getElementById('login-password').value
+        });
+        showToast('Login successful!');
+        enter(r.user);
+      } catch (e) { showToast(esc(e.message)); }
+    }
+    async function handleSignupSubmit(event) {
+      event.preventDefault();
+      try {
+        const r = await api('/auth/signup', 'POST', {
+          email: document.getElementById('signup-email').value,
+          password: document.getElementById('signup-password').value
+        });
+        showToast('Account created successfully!');
+        enter(r.user);
+      } catch (e) { showToast(esc(e.message)); }
+    }
+    async function logout() {
+      try { await api('/auth/logout', 'POST'); } catch (e) {}
+      currentUser = null;
+      showToast('Logged out successfully');
+      showPage('login');
+    }
+
+    function togglePasswordVisibility(inputId, eyeIconId) {
+      const input = document.getElementById(inputId);
+      const eyeIcon = document.getElementById(eyeIconId);
+      const isPassword = input.type === 'password';
+      input.type = isPassword ? 'text' : 'password';
+      eyeIcon.className = isPassword ? 'fa-regular fa-eye text-sm' : 'fa-regular fa-eye-slash text-sm';
+    }
+    function fillShortcut(mode) {
+      if (mode === 'login') {
+        document.getElementById('login-email').value = 'admin@eventnest.com';
+        document.getElementById('login-password').value = 'Admin@123';
+        showToast('Filled admin test account.');
+      }
+    }
+    function showToast(message) {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      toast.className = 'bg-gray-900 text-white text-xs px-4 py-2.5 rounded-lg shadow-lg flex items-center gap-2 transform transition-all duration-300 translate-y-2 opacity-0 pointer-events-auto';
+      toast.innerHTML = `<i class="fa-solid fa-circle-info text-blue-400"></i><span>${message}</span>`;
+      container.appendChild(toast);
+      requestAnimationFrame(() => toast.classList.remove('translate-y-2', 'opacity-0'));
+      setTimeout(() => { toast.classList.add('opacity-0', 'translate-y-2'); setTimeout(() => toast.remove(), 300); }, 3000);
+    }
+
+    // ---------- Dashboard ----------
+    async function loadDashboard() {
+      try {
+        const [stats, cur, up, pend, notes, v] = await Promise.all([
+          api('/stats'), api('/events?view=current'), api('/events?view=upcoming'),
+          api('/admin/events?status=Pending'), api('/notifications'), api('/venues')
+        ]);
+        venues = v;
+        fillVenueSelects();
+        events = [...cur.map(e => ({ ...e, _label: 'In Progress' })), ...up.map(e => ({ ...e, _label: 'Upcoming' }))];
+        pending = pend;
+        document.getElementById('current-count').innerText = stats.current;
+        document.getElementById('upcoming-count').innerText = stats.upcoming;
+        document.getElementById('pending-count').innerText = stats.pending ?? pend.length;
+        renderEvents(); renderPending(); renderAlerts(notes);
+      } catch (e) {
+        if (e.status === 401) { currentUser = null; showPage('login'); } else showToast(esc(e.message));
+      }
+    }
+    function fillVenueSelects() {
+      const html = venues.map(v => `<option value="${v.venue_id}">${esc(v.name)}</option>`).join('');
+      document.getElementById('add-venue').innerHTML = html;
+      document.getElementById('edit-venue').innerHTML = html;
+    }
+    function renderEvents() {
+      const container = document.getElementById('event-list');
+      container.innerHTML = events.length ? '' : '<p class="text-xs text-gray-400 text-center py-4">No scheduled events.</p>';
+      events.forEach(event => {
+        const item = document.createElement('div');
+        item.className = `event-item ${event.event_id === selectedEventId ? 'selected' : ''}`;
+        item.onclick = () => selectEvent(event.event_id);
+        item.ondblclick = () => openEditModal(event);
+        const statusClass = event._label === 'In Progress' ? 'in-progress' : 'done';
+        item.innerHTML = `
+          <div class="flex items-center gap-3">
+            <div class="checkbox"></div>
+            <div>
+              <h4 class="text-sm font-semibold text-gray-800">${esc(event.title)}</h4>
+              <p class="text-xs text-gray-500">${fmt(event.start_datetime)} - ${fmt(event.end_datetime).slice(11)} &middot; ${esc(event.venue_name)}</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2"><span class="tag ${statusClass}">${event._label}</span></div>`;
+        container.appendChild(item);
+      });
+    }
+    function renderPending() {
+      const c = document.getElementById('pending-list');
+      c.innerHTML = pending.length ? '' : '<p class="text-xs text-gray-400 text-center py-2">No pending requests.</p>';
+      pending.forEach(e => {
+        const item = document.createElement('div');
+        item.className = 'event-item';
+        item.innerHTML = `
+          <div>
+            <h4 class="text-sm font-semibold text-gray-800">${esc(e.title)}</h4>
+            <p class="text-xs text-gray-500">${fmt(e.start_datetime)} - ${fmt(e.end_datetime).slice(11)} &middot; ${esc(e.venue_name)}</p>
+            <p class="text-xs text-gray-400">Requested by ${esc(e.requested_by_name)}</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-3 py-1.5 rounded-lg font-semibold" onclick="approveEvent(${e.event_id})">Approve</button>
+            <button class="bg-red-500 hover:bg-red-600 text-white text-xs px-3 py-1.5 rounded-lg font-semibold" onclick="rejectEvent(${e.event_id})">Reject</button>
+          </div>`;
+        c.appendChild(item);
+      });
+    }
+    function renderAlerts(notes) {
+      const c = document.getElementById('alerts-list');
+      const items = (notes.items || []).slice(0, 4);
+      c.innerHTML = items.length ? items.map(n => `
+        <div class="bg-indigo-50 border border-indigo-100 rounded-lg p-3 text-indigo-900 ${n.is_read ? 'opacity-60' : ''}">
+          <p class="text-xs">${esc(n.message)}</p>
+        </div>`).join('') : '<p class="text-xs text-gray-400">No alerts.</p>';
+      if (notes.unread) api('/notifications/read-all', 'PATCH').catch(() => {});
+    }
+    function selectEvent(id) { selectedEventId = selectedEventId === id ? null : id; renderEvents(); }
+
+    // ---------- Modals & actions ----------
+    function openModal(id) { document.getElementById(id).classList.add('active'); }
+    function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+
+    function readForm(p) {
+      return {
+        title: document.getElementById(p + '-name').value.trim(),
+        venue_id: Number(document.getElementById(p + '-venue').value),
+        start_datetime: document.getElementById(p + '-start').value,
+        end_datetime: document.getElementById(p + '-end').value,
+        description: document.getElementById(p + '-desc').value.trim()
+      };
+    }
+    async function addEvent() {
+      const body = readForm('add');
+      if (!body.title) { showToast('Please enter an event name!'); return; }
+      try {
+        await api('/events', 'POST', body);
+        ['add-name', 'add-start', 'add-end', 'add-desc'].forEach(i => document.getElementById(i).value = '');
+        closeModal('add-modal');
+        showToast('Event added successfully!');
+        loadDashboard();
+      } catch (e) { showToast(esc(e.message)); }
+    }
+    function openEditModal(event) {
+      selectedEventId = event.event_id; editingId = event.event_id;
+      document.getElementById('edit-name').value = event.title;
+      document.getElementById('edit-venue').value = event.venue_id;
+      document.getElementById('edit-start').value = event.start_datetime.slice(0, 16);
+      document.getElementById('edit-end').value = event.end_datetime.slice(0, 16);
+      document.getElementById('edit-desc').value = event.description || '';
+      openModal('edit-modal');
+    }
+    async function saveEdit() {
+      try {
+        await api('/events/' + editingId, 'PUT', readForm('edit'));
+        closeModal('edit-modal');
+        showToast('Event updated successfully!');
+        loadDashboard();
+      } catch (e) { showToast(esc(e.message)); }
+    }
+    function confirmFinish() {
+      if (!selectedEventId) { showToast('Please select an event to finish!'); return; }
+      openModal('finish-modal');
+    }
+    async function executeFinish() {
+      try {
+        await api(`/events/${selectedEventId}/finish`, 'PATCH');
+        selectedEventId = null; closeModal('finish-modal');
+        showToast('Event marked as finished!'); loadDashboard();
+      } catch (e) { closeModal('finish-modal'); showToast(esc(e.message)); }
+    }
+    function confirmDelete() {
+      if (!selectedEventId) { showToast('Please select an event to delete!'); return; }
+      openModal('delete-modal');
+    }
+    async function executeDelete() {
+      try {
+        await api('/events/' + selectedEventId, 'DELETE');
+        selectedEventId = null; closeModal('delete-modal');
+        showToast('Event deleted successfully!'); loadDashboard();
+      } catch (e) { closeModal('delete-modal'); showToast(esc(e.message)); }
+    }
+    async function approveEvent(id) {
+      try { await api(`/events/${id}/approve`, 'PATCH'); showToast('Event approved!'); }
+      catch (e) { showToast(esc(e.message)); }   // e.g. venue already booked (409)
+      loadDashboard();
+    }
+    async function rejectEvent(id) {
+      const reason = prompt('Reason for rejection (optional):');
+      if (reason === null) return;
+      try { await api(`/events/${id}/reject`, 'PATCH', { reason }); showToast('Event rejected.'); }
+      catch (e) { showToast(esc(e.message)); }
+      loadDashboard();
+    }
+
+    // Start: already logged in?
+    (async () => {
+      try { const r = await api('/auth/me'); enter(r.user); } catch (e) { showPage('login'); }
+    })();
+  </script>
+</body>
+</html>
