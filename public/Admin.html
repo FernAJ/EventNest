@@ -181,6 +181,137 @@
       position: relative;
       box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
     }
+          /* Interactive calendar (same look as the User page) */
+        .calendar-widget {
+            --surface-color: #ffffff; --primary-color: #6366f1; --primary-light: #eef2ff;
+            --text-primary: #0f172a; --text-secondary: #475569; --text-muted: #94a3b8;
+            --border-color: #e2e8f0; --shadow-sm: 0 1px 3px rgba(0,0,0,0.05);
+            --radius-sm: 8px; --radius-md: 12px; --transition: all 0.2s ease;
+        }
+        .calendar-widget {
+            background: var(--surface-color);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 1.25rem;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .calendar-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            gap: 0.5rem;
+        }
+
+        .cal-controls-selectors {
+            display: flex;
+            gap: 0.3rem;
+            align-items: center;
+            font-weight: 700;
+            font-size: 0.95rem;
+        }
+
+        .cal-select {
+            border: 1px solid var(--border-color);
+            background: var(--surface-color);
+            color: var(--text-primary);
+            font-weight: 700;
+            font-size: 0.88rem;
+            padding: 0.25rem 0.4rem;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            outline: none;
+        }
+
+        .cal-select:hover {
+            border-color: var(--primary-color);
+        }
+
+        .cal-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            width: 28px;
+            height: 28px;
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: var(--transition);
+        }
+
+        .cal-btn:hover {
+            background: var(--primary-light);
+            color: var(--primary-color);
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 4px;
+            text-align: center;
+        }
+
+        .cal-day-header {
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            padding: 0.4rem 0;
+        }
+
+        .cal-date {
+            font-size: 0.82rem;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: var(--radius-sm);
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: var(--transition);
+            position: relative;
+        }
+
+        .cal-date:hover:not(.other-month) {
+            background-color: var(--primary-light);
+            color: var(--primary-color);
+        }
+
+        .cal-date.other-month {
+            color: var(--text-muted);
+            opacity: 0.4;
+        }
+
+        .cal-date.today {
+            border: 1px dashed var(--primary-color);
+            font-weight: 700;
+        }
+
+        /* Calendar Selected Date Event Info */
+        .cal-event-info {
+            margin-top: 1rem;
+            padding-top: 0.85rem;
+            border-top: 1px dashed var(--border-color);
+            font-size: 0.82rem;
+        }
+
+        /* Event Indicator Dot on Calendar - ONLY for due dates */
+        .cal-date.has-event {
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+
+        .cal-date.has-event::after {
+            content: '';
+            position: absolute;
+            bottom: 4px;
+            width: 5px;
+            height: 5px;
+            background-color: var(--primary-color);
+            border-radius: 50%;
+        }
   </style>
 </head>
 <body class="antialiased selection:bg-blue-500 selection:text-white">
@@ -367,23 +498,23 @@
             
             <div id="alerts-list" class="space-y-2 mb-4"></div>
 
-            <!-- Calendar Widget -->
-            <div class="border border-gray-200 rounded-lg p-3 text-center">
-              <div class="flex justify-between text-xs font-semibold mb-2">
-                <span class="cursor-pointer text-gray-400">«</span>
-                <span>November 2026</span>
-                <span class="cursor-pointer text-gray-400">»</span>
+            <!-- Interactive Calendar Widget -->
+            <div class="calendar-widget">
+              <div class="calendar-nav">
+                <button class="cal-btn" id="cal-prev-btn" title="Previous Month">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                </button>
+                <div class="cal-controls-selectors">
+                  <select id="cal-month-select" class="cal-select"></select>
+                  <select id="cal-year-select" class="cal-select"></select>
+                </div>
+                <button class="cal-btn" id="cal-next-btn" title="Next Month">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                </button>
               </div>
-              <div class="grid grid-cols-7 gap-1 text-[11px] text-gray-600">
-                <span class="font-bold text-gray-400">Su</span><span class="font-bold text-gray-400">Mo</span><span class="font-bold text-gray-400">Tu</span><span class="font-bold text-gray-400">We</span><span class="font-bold text-gray-400">Th</span><span class="font-bold text-gray-400">Fr</span><span class="font-bold text-gray-400">Sa</span>
-                <span class="text-gray-300">30</span><span class="text-gray-300">31</span>
-                <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span>
-                <span>6</span><span>7</span><span>8</span><span>9</span><span>10</span><span>11</span><span>12</span>
-                <span>13</span><span>14</span><span>15</span>
-                <span class="bg-indigo-100 text-indigo-700 rounded">16</span><span class="bg-indigo-100 text-indigo-700 rounded">17</span><span class="bg-indigo-100 text-indigo-700 rounded">18</span><span class="bg-indigo-100 text-indigo-700 rounded">19</span>
-                <span class="bg-indigo-100 text-indigo-700 rounded">20</span><span class="bg-indigo-100 text-indigo-700 rounded">21</span><span class="bg-indigo-100 text-indigo-700 rounded">22</span><span class="bg-indigo-100 text-indigo-700 rounded">23</span>
-                <span class="bg-blue-600 text-white rounded font-bold">24</span><span>25</span><span>26</span>
-                <span>27</span><span>28</span><span>29</span><span>30</span>
+              <div class="calendar-grid" id="calendar-days-grid"></div>
+              <div class="cal-event-info" id="cal-selected-info">
+                <span style="color: var(--text-muted);">Click any date to see its scheduled events.</span>
               </div>
             </div>
           </div>
@@ -621,7 +752,7 @@
         document.getElementById('current-count').innerText = stats.current;
         document.getElementById('upcoming-count').innerText = stats.upcoming;
         document.getElementById('pending-count').innerText = stats.pending ?? pend.length;
-        renderEvents(); renderPending(); renderAlerts(notes);
+        renderEvents(); renderPending(); renderAlerts(notes); renderCalendar();
       } catch (e) {
         if (e.status === 401) { currentUser = null; showPage('login'); } else showToast(esc(e.message));
       }
@@ -758,7 +889,68 @@
       loadDashboard();
     }
 
+
+    // ---------- Interactive calendar (same as the User page) ----------
+    const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    let currentCalDate = new Date();
+    let calReady = false;
+
+    function initCalendar() {
+      const ms = document.getElementById('cal-month-select'), ys = document.getElementById('cal-year-select');
+      ms.innerHTML = monthNames.map((m, i) => `<option value="${i}">${m}</option>`).join('');
+      let years = ''; for (let y = 2022; y <= 2030; y++) years += `<option value="${y}">${y}</option>`;
+      ys.innerHTML = years;
+      ms.addEventListener('change', () => { currentCalDate.setMonth(parseInt(ms.value)); renderCalendar(); });
+      ys.addEventListener('change', () => { currentCalDate.setFullYear(parseInt(ys.value)); renderCalendar(); });
+      document.getElementById('cal-prev-btn').addEventListener('click', () => { currentCalDate.setDate(1); currentCalDate.setMonth(currentCalDate.getMonth() - 1); renderCalendar(); });
+      document.getElementById('cal-next-btn').addEventListener('click', () => { currentCalDate.setDate(1); currentCalDate.setMonth(currentCalDate.getMonth() + 1); renderCalendar(); });
+      calReady = true;
+      renderCalendar();
+    }
+    function renderCalendar() {
+      if (!calReady) return;
+      const grid = document.getElementById('calendar-days-grid'), info = document.getElementById('cal-selected-info');
+      const year = currentCalDate.getFullYear(), month = currentCalDate.getMonth();
+      document.getElementById('cal-month-select').value = month;
+      document.getElementById('cal-year-select').value = year;
+      grid.innerHTML = '';
+      ['Su','Mo','Tu','We','Th','Fr','Sa'].forEach(dh => {
+        const el = document.createElement('div'); el.className = 'cal-day-header'; el.textContent = dh; grid.appendChild(el);
+      });
+      const first = new Date(year, month, 1).getDay();
+      const total = new Date(year, month + 1, 0).getDate();
+      const prevTotal = new Date(year, month, 0).getDate();
+      for (let x = first; x > 0; x--) {
+        const el = document.createElement('div'); el.className = 'cal-date other-month'; el.textContent = prevTotal - x + 1; grid.appendChild(el);
+      }
+      const today = new Date();
+      const calEvents = [...events.map(e => ({ title: e.title, date: e.start_datetime.slice(0, 10), status: e._label })),
+                         ...pending.map(e => ({ title: e.title, date: e.start_datetime.slice(0, 10), status: 'Pending' }))];
+      for (let d = 1; d <= total; d++) {
+        const el = document.createElement('div');
+        el.className = 'cal-date'; el.textContent = d;
+        const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+        if (today.getFullYear() === year && today.getMonth() === month && today.getDate() === d) el.classList.add('today');
+        const matched = calEvents.filter(e => e.date === dateStr);
+        if (matched.length) el.classList.add('has-event');
+        el.onclick = () => {
+          document.querySelectorAll('.cal-date').forEach(cd => cd.classList.remove('selected'));
+          el.classList.add('selected');
+          info.innerHTML = matched.length
+            ? `<div style="font-weight:700; color:var(--primary-color); margin-bottom:4px;">${dateStr} (${matched.length} Event${matched.length > 1 ? 's' : ''}):</div>` +
+              matched.map(m => `<div style="color:var(--text-primary); margin-top:2px;">&bull; <strong>${esc(m.title)}</strong> (${esc(m.status)})</div>`).join('')
+            : `<span style="color:var(--text-secondary);">No events scheduled for <strong>${dateStr}</strong>.</span>`;
+        };
+        grid.appendChild(el);
+      }
+      const remaining = (7 - ((first + total) % 7)) % 7;
+      for (let y = 1; y <= remaining; y++) {
+        const el = document.createElement('div'); el.className = 'cal-date other-month'; el.textContent = y; grid.appendChild(el);
+      }
+    }
+
     // Start: already logged in?
+    initCalendar();
     (async () => {
       try { const r = await api('/auth/me'); enter(r.user); } catch (e) { showPage('login'); }
     })();
